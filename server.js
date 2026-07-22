@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 
+const fs = require("fs");
+const path = require("path");
+const config = require("./config");
+
 const app = express();
 
 app.use(cors());
@@ -9,37 +13,52 @@ app.use(express.json());
 app.get("/", (req, res) => {
     res.json({
         app: "Lekhpal PRO Backend",
-        status: "Running"
+        status: "Running",
+        version: "2.0"
     });
 });
 
-// Village API
+// ======================
+// Health Check API
+// ======================
+console.log("Health route loaded");
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        success: true,
+        status: "UP",
+        service: "Lekhpal PRO Backend",
+        version: "1.0",
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Village API (Temporary Sample)
 app.get("/villages", (req, res) => {
 
     const districtCode = req.query.districtCode;
     const tehsilCode = req.query.tehsilCode;
 
+    const filePath = path.join(__dirname, config.PATH.VILLAGES);
+
+    const villages = JSON.parse(
+        fs.readFileSync(filePath, "utf8")
+    );
+
+    const result = villages.filter(v =>
+        v.districtCode === districtCode &&
+        v.tehsilCode === tehsilCode
+    );
+
     res.json({
         success: true,
         districtCode,
         tehsilCode,
-        villages: [
-            {
-                villageCode: "001",
-                villageNameHindi: "नमूना गाँव 1",
-                villageNameEnglish: "Sample Village 1"
-            },
-            {
-                villageCode: "002",
-                villageNameHindi: "नमूना गाँव 2",
-                villageNameEnglish: "Sample Village 2"
-            }
-        ]
+        villages: result
     });
 
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = config.SERVER.PORT;
 
 app.listen(PORT, () => {
     console.log("Server running on port " + PORT);
